@@ -11,7 +11,7 @@ import {
     description: INodeTypeDescription = {
       displayName: 'Perform Trigger',
       name: 'performTrigger',
-      icon: 'file:perform.svg',
+      icon: 'file:perform-trigger.svg',
       group: ['trigger'],
       version: 1,
       description: 'Dispara ao receber webhooks do Perform',
