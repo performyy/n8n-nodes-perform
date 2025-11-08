@@ -3,7 +3,7 @@ import { ICredentialType, INodeProperties } from 'n8n-workflow';
 export class PerformApi implements ICredentialType {
   name = 'performApi';
   displayName = 'Perform API';
-  documentationUrl = ''; // opcional (link docs Perform)
+  documentationUrl = '';
   properties: INodeProperties[] = [
     {
       displayName: 'Base URL',
