@@ -1,6 +1,7 @@
 import {
     IExecuteFunctions,
     IHttpRequestOptions,
+    ILoadOptionsFunctions,
     INodeExecutionData,
     INodeType,
     INodeTypeDescription
@@ -32,13 +33,48 @@ export class Perform implements INodeType {
                 default: 'createLink',
             },
             {
-                displayName: 'Form ID',
+                displayName: 'Form',
                 name: 'formId',
-                type: 'string',
+                type: 'options',
+                required: true,
                 default: '',
-                description: 'ID do formulário',
-            },
+                description: 'Selecione um formulário do Perform',
+                typeOptions: {
+                    loadOptionsMethod: 'getForms',         // chama o método abaixo
+                },
+                noDataExpression: true,
+            }
         ],
+    };
+
+    methods = {
+        loadOptions: {
+            async getForms(this: ILoadOptionsFunctions) {
+                // Lê credenciais Perform API
+                const credentials = await this.getCredentials('performApi');
+                const baseUrl = credentials.baseUrl as string;
+                const apiKey = credentials.apiKey as string;
+
+                const options: IHttpRequestOptions = {
+                    method: 'GET',
+                    url: `${baseUrl}/api/v1/n8n-integration/find-forms`,   // ajuste conforme sua API
+                    json: true,
+                    headers: { Authorization: apiKey },
+                };
+
+                const res = await this.helpers.httpRequest(options);
+
+                // mapeia para o formato { name, value }
+                // ajuste os campos conforme o payload da sua API
+                const forms = Array.isArray(res?.data) ? res.data : res; // flexível
+                return (forms || []).map((f: any) => ({
+                    name: f.title,
+                    value: f.id,
+                    // opcional: descrição no hover
+                    description: f.description ?? undefined,
+                }));
+            },
+        },
     };
 
     async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
@@ -57,24 +93,22 @@ export class Perform implements INodeType {
             console.log('operation', operation);
             console.log('credentials', credentials);
 
-            let options: IHttpRequestOptions = {
-                method: 'GET',
-                json: true,
-                headers: { Authorization: `Bearer ${apiKey}` },
-                body: {},
-                url: '',
-            };
 
             if (operation === 'createLink') {
-                options = {
-                    ...options,
-                    method: 'GET',
-                    url: `${baseUrl}/forms/${formId}/link`,
-                };
-            }
 
-            const response = await this.helpers.httpRequest(options);
-            returnData.push({ json: response });
+                let options: IHttpRequestOptions = {
+                    method: 'POST',
+                    json: true,
+                    headers: { Authorization: apiKey },
+                    body: {
+                        formId
+                    },
+                    url: `${baseUrl}/api/v1/n8n-integration/create-link`,
+                };
+
+                const response = await this.helpers.httpRequest(options);
+                returnData.push({ json: response });
+            }
         }
 
         return [returnData];
